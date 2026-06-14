@@ -1,0 +1,124 @@
+version: '3.8'
+
+# ============================================
+# DOCKER COMPOSE — ENVIRONNEMENT LOCAL
+# ============================================
+# Ce fichier démarre tous les services nécessaires
+# pour faire tourner l'account-service en local.
+#
+# Commandes utiles :
+#   Démarrer    : docker-compose up -d
+#   Arrêter     : docker-compose down
+#   Voir logs   : docker-compose logs -f account-service
+#   Statut      : docker-compose ps
+# ============================================
+
+services:
+
+  # ============================================
+  # POSTGRESQL — Base de données de l'account-service
+  # Chaque microservice a SA PROPRE base de données
+  # C'est le principe "Database per Service" du DDD
+  # ============================================
+  db-accounts:
+    image: postgres:15-alpine        # Image légère de PostgreSQL
+    container_name: db-accounts
+    environment:
+      POSTGRES_DB: accounts_db       # Nom de la base créée automatiquement
+      POSTGRES_USER: postgres        # Utilisateur PostgreSQL
+      POSTGRES_PASSWORD: postgres    # Mot de passe (à changer en production !)
+    ports:
+      - "5433:5432"   # 5433 en local → 5432 dans le container
+    volumes:
+      - accounts_data:/var/lib/postgresql/data  # Données persistantes même après arrêt
+    networks:
+      - banque-network
+    healthcheck:
+      # Vérifie que PostgreSQL est prêt avant de démarrer l'account-service
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s   # Vérifie toutes les 10 secondes
+      timeout: 5s     # Timeout après 5 secondes
+      retries: 5      # Réessaie 5 fois avant de déclarer le service en erreur
+
+  # ============================================
+  # ZOOKEEPER — Gestionnaire de cluster Kafka
+  # Kafka a besoin de Zookeeper pour fonctionner
+  # Il gère la coordination entre les brokers Kafka
+  # ============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181    # Port d'écoute de Zookeeper
+      ZOOKEEPER_TICK_TIME: 2000      # Intervalle de synchronisation (ms)
+    networks:
+      - banque-network
+
+  # ============================================
+  # APACHE KAFKA — Message Broker
+  # Permet la communication ASYNCHRONE entre services
+  # Ex: account-service publie un événement "CompteCréé"
+  #     notification-service le reçoit et envoie un SMS
+  # ============================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper    # Kafka démarre seulement après Zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # PLAINTEXT = communication interne entre containers
+      # PLAINTEXT_HOST = communication depuis ta machine locale
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'  # Crée les topics automatiquement
+    networks:
+      - banque-network
+
+  # ============================================
+  # ACCOUNT SERVICE — Notre microservice Java
+  # Gère les comptes bancaires (création, solde,
+  # crédit, débit, blocage, fermeture)
+  # ============================================
+  account-service:
+    build:
+      context: ./account-service    # Dossier contenant le Dockerfile
+      dockerfile: Dockerfile
+    container_name: account-service
+    ports:
+      - "8082:8082"    # API accessible sur http://localhost:8082
+    environment:
+      # Ces variables écrasent celles de application.properties
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-accounts:5432/accounts_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      db-accounts:
+        condition: service_healthy   # Attend que PostgreSQL soit prêt
+      kafka:
+        condition: service_started   # Attend que Kafka soit démarré
+    networks:
+      - banque-network
+    restart: on-failure    # Redémarre automatiquement si le service plante
+
+# ============================================
+# VOLUMES — Stockage persistant
+# Les données PostgreSQL survivent aux redémarrages
+# ============================================
+volumes:
+  accounts_data:
+
+# ============================================
+# RÉSEAU — Communication entre containers
+# Tous les services peuvent se parler via leurs noms
+# Ex: "db-accounts", "kafka", "account-service"
+# ============================================
+networks:
+  banque-network:
+    driver: bridge
