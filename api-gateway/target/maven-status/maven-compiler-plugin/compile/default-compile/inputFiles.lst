@@ -1,0 +1,5 @@
+C:\Users\komol\Documents\MASTER I\SEMESTRE 2\INF462\TP FINAL\api-gateway\src\main\java\com\bankapp\gateway\config\RateLimiterConfig.java
+C:\Users\komol\Documents\MASTER I\SEMESTRE 2\INF462\TP FINAL\api-gateway\src\main\java\com\bankapp\gateway\config\SecurityConfig.java
+C:\Users\komol\Documents\MASTER I\SEMESTRE 2\INF462\TP FINAL\api-gateway\src\main\java\com\bankapp\gateway\ApiGatewayApplication.java
+C:\Users\komol\Documents\MASTER I\SEMESTRE 2\INF462\TP FINAL\api-gateway\src\main\java\com\bankapp\gateway\controller\FallbackController.java
+C:\Users\komol\Documents\MASTER I\SEMESTRE 2\INF462\TP FINAL\api-gateway\src\main\java\com\bankapp\gateway\filter\JwtAuthFilter.java
