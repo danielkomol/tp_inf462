@@ -1,20 +1,192 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
 
-  # ── Zookeeper (requis par Kafka) ──────────────────────────────────
+  # === BASES DE DONNEES ===
+
+  db-identity:
+    image: mysql:8.0
+    container_name: db-identity
+    environment:
+      MYSQL_DATABASE: identity_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3306:3306"
+    volumes:
+      - identity_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-accounts:
+    image: mysql:8.0
+    container_name: db-accounts
+    environment:
+      MYSQL_DATABASE: accounts_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3307:3306"
+    volumes:
+      - accounts_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-transactions:
+    image: mysql:8.0
+    container_name: db-transactions
+    environment:
+      MYSQL_DATABASE: transactions_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3308:3306"
+    volumes:
+      - transactions_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-customers:
+    image: mysql:8.0
+    container_name: db-customers
+    environment:
+      MYSQL_DATABASE: customers_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3309:3306"
+    volumes:
+      - customers_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-loans:
+    image: mysql:8.0
+    container_name: db-loans
+    environment:
+      MYSQL_DATABASE: loans_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3310:3306"
+    volumes:
+      - loans_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-operators:
+    image: mysql:8.0
+    container_name: db-operators
+    environment:
+      MYSQL_DATABASE: operators_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3311:3306"
+    volumes:
+      - operators_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-documents:
+    image: mysql:8.0
+    container_name: db-documents
+    environment:
+      MYSQL_DATABASE: documents_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "3312:3306"
+    volumes:
+      - documents_data:/var/lib/mysql
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: notifications_db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - banque-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - banque-network
+
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - banque-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
+    image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+    networks:
+      - banque-network
 
-  # ── Kafka ─────────────────────────────────────────────────────────
   kafka:
-    image: confluentinc/cp-kafka:7.6.0
+    image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
     depends_on:
       - zookeeper
@@ -23,29 +195,314 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - banque-network
 
-  # ── Redis (gateway + identity-service) ───────────────────────────
-  redis:
-    image: redis:7.2-alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
+  # === SPRING CLOUD INFRASTRUCTURE ===
 
-  # ── PostgreSQL (identity-service) ─────────────────────────────────
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres
+  service-registry:
+    build:
+      context: ./service-registry
+      dockerfile: Dockerfile
+    container_name: service-registry
     ports:
-      - "5432:5432"
+      - "8761:8761"
+    networks:
+      - banque-network
+    restart: on-failure
+
+  service-config:
+    build:
+      context: ./service-config
+      dockerfile: Dockerfile
+    container_name: service-config
+    ports:
+      - "8888:8888"
+    depends_on:
+      - service-registry
     environment:
-      POSTGRES_USER: bankapp
-      POSTGRES_PASSWORD: bankapp_pass
-      POSTGRES_DB: identity_db
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    networks:
+      - banque-network
+    restart: on-failure
+
+  # === MICROSERVICES JAVA ===
+
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    container_name: identity-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-identity:3306/identity_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_REDIS_HOST: redis
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-identity:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  account-service:
+    build:
+      context: ./account-service
+      dockerfile: Dockerfile
+    container_name: account-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-accounts:3306/accounts_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-accounts:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  transaction-service:
+    build:
+      context: ./transaction-service
+      dockerfile: Dockerfile
+    container_name: transaction-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-transactions:3306/transactions_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-transactions:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  loan-service:
+    build:
+      context: ./loan-service
+      dockerfile: Dockerfile
+    container_name: loan-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-loans:3306/loans_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-loans:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    container_name: customer-service
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-customers:3306/customers_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-customers:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  operator-service:
+    build:
+      context: ./operator-service
+      dockerfile: Dockerfile
+    container_name: operator-service
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-operators:3306/operators_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      db-operators:
+        condition: service_healthy
+      service-registry:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+    depends_on:
+      - redis
+      - service-registry
+    networks:
+      - banque-network
+    restart: on-failure
+
+  # === MICROSERVICES PYTHON ===
+
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: document-service
+    ports:
+      - "8085:8085"
+    environment:
+      DATABASE_URL: mysql+pymysql://root:@db-documents:3306/documents_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      db-documents:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - document_uploads:/app/uploads
+    networks:
+      - banque-network
+    restart: on-failure
+
+  ocr-service:
+    build:
+      context: ./ocr-service
+      dockerfile: Dockerfile
+    container_name: ocr-service
+    ports:
+      - "8086:8000"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_started
+    networks:
+      - banque-network
+    restart: on-failure
+
+  audit-service:
+    build:
+      context: ./audit-service
+      dockerfile: Dockerfile
+    container_name: audit-service
+    ports:
+      - "8087:8087"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    depends_on:
+      kafka:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - banque-network
+    restart: on-failure
+
+  reporting-service:
+    build:
+      context: ./reporting-service
+      dockerfile: Dockerfile
+    container_name: reporting-service
+    ports:
+      - "8088:8088"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - banque-network
+    restart: on-failure
+
+  # === MICROSERVICES NODE.JS ===
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/notifications_db
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      - mongodb
+      - kafka
+    networks:
+      - banque-network
+    restart: on-failure
 
 volumes:
-  postgres_data:
+  identity_data:
+  accounts_data:
+  transactions_data:
+  customers_data:
+  loans_data:
+  operators_data:
+  documents_data:
+  mongo_data:
+  elastic_data:
+  document_uploads:
+
+networks:
+  banque-network:
+    driver: bridge
+
+
+
