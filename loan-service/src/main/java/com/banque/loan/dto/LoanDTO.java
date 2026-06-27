@@ -1,7 +1,7 @@
 package com.banque.loan.dto;
 
-import com.banque.loan.model.LoanRequest;
 import com.banque.loan.model.Echeance;
+import com.banque.loan.model.LoanRequest;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -11,11 +11,8 @@ import java.util.List;
 
 public class LoanDTO {
 
-    /**
-     * SOUMETTRE UNE DEMANDE DE PRÊT
-     */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class LoanRequest {
+    public static class LoanSubmitRequest {
         @NotBlank(message = "L'ID client est obligatoire")
         private String clientId;
 
@@ -39,9 +36,6 @@ public class LoanDTO {
         private String compteVersement;
     }
 
-    /**
-     * VALIDER UN PRÊT (par l'opérateur)
-     */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ValidationRequest {
         @NotNull
@@ -51,9 +45,6 @@ public class LoanDTO {
         private String motifRejet;
     }
 
-    /**
-     * EFFECTUER UN REMBOURSEMENT
-     */
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class RemboursementRequest {
         @NotNull
@@ -62,9 +53,6 @@ public class LoanDTO {
         private String compteDebit;
     }
 
-    /**
-     * RÉPONSE DEMANDE DE PRÊT
-     */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class LoanResponse {
         private Long id;
@@ -84,9 +72,6 @@ public class LoanDTO {
         private LocalDateTime validatedAt;
     }
 
-    /**
-     * RÉPONSE ÉCHÉANCE
-     */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class EcheanceResponse {
         private Long id;
@@ -101,20 +86,10 @@ public class LoanDTO {
         private LocalDateTime datePaiement;
     }
 
-    /**
-     * RÉPONSE GÉNÉRIQUE
-     */
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ApiResponse<T> {
         private boolean success;
         private String message;
         private T data;
-
-        public static <T> ApiResponse<T> success(String message, T data) {
-            return new ApiResponse<>(true, message, data);
-        }
-        public static <T> ApiResponse<T> error(String message) {
-            return new ApiResponse<>(false, message, null);
-        }
     }
 }

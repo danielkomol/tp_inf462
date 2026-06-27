@@ -1,14 +1,11 @@
-# ============================================
-# DOCKERFILE — api-gateway (Node.js)
-# ============================================
-FROM node:20-alpine AS builder
+FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
-COPY package*.json .
-RUN npm ci --only=production
+COPY pom.xml .
+COPY src ./src
+RUN apk add --no-cache maven && mvn clean package -DskipTests
 
-FROM node:20-alpine
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/node_modules ./node_modules
-COPY . .
+COPY --from=build /app/target/*.jar api-gateway.jar
 EXPOSE 8080
-CMD ["node", "src/index.js"]
+ENTRYPOINT ["java", "-jar", "api-gateway.jar"]

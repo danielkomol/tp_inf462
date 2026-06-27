@@ -1,6 +1,4 @@
-﻿version: '3.8'
-
-services:
+﻿services:
 
   # === BASES DE DONNEES ===
 
@@ -171,10 +169,11 @@ services:
     networks:
       - banque-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 15s
+      retries: 10
+      start_period: 90s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -503,6 +502,7 @@ volumes:
 networks:
   banque-network:
     driver: bridge
+
 
 
 
