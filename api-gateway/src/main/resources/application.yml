@@ -8,15 +8,15 @@ spring:
   # Redis pour le rate limiting
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
 
-  # Sécurité JWT — clé HS256 partagée avec l'identity-service
+  # Sécurité JWT — même clé hex que l'identity-service
   security:
     oauth2:
       resourceserver:
         jwt:
-          secret: QmFucXVlUGxhdGZvcm1lU2VjcmV0S2V5Rm9ySldUVmFsaWRhdGlvbjIwMjZZYW91bmRlVW5pdmVyc2l0eQ==
+          secret: 42616e7175655365637265744b65794662616e71756553656372657432303236
 
   # Routes de la gateway
   cloud:

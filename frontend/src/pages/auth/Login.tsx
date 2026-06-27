@@ -6,13 +6,16 @@ export default function Login() {
   const { login, error, setError } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const role = login(form.email, form.password);
+    setSubmitting(true);
+    const role = await login(form.email, form.password);
+    setSubmitting(false);
     if (role === 'CLIENT')    navigate('/client/dashboard');
-    if (role === 'ADMIN')     navigate('/admin/dashboard');
-    if (role === 'OPERATEUR') navigate('/operateur/dashboard');
+    else if (role === 'ADMIN')     navigate('/admin/dashboard');
+    else if (role === 'OPERATEUR') navigate('/operateur/dashboard');
   };
 
   return (
@@ -26,20 +29,18 @@ export default function Login() {
           <div className="form-group">
             <label>Email</label>
             <input type="email" value={form.email} required
-              onChange={e => { setError(''); setForm({...form, email: e.target.value}); }} />
+              onChange={e => { setError(''); setForm({ ...form, email: e.target.value }); }} />
           </div>
           <div className="form-group">
             <label>Mot de passe</label>
             <input type="password" value={form.password} required
-              onChange={e => setForm({...form, password: e.target.value})} />
+              onChange={e => setForm({ ...form, password: e.target.value })} />
           </div>
-          <button className="btn btn-primary" style={{width:'100%'}} type="submit">Se connecter</button>
+          <button className="btn btn-primary" style={{ width: '100%' }} type="submit" disabled={submitting}>
+            {submitting ? 'Connexion...' : 'Se connecter'}
+          </button>
         </form>
         <div className="auth-link">Pas encore de compte ? <Link to="/register">S'inscrire</Link></div>
-        <div style={{marginTop:20, fontSize:'0.78rem', color:'#aaa'}}>
-          <strong>Comptes démo :</strong><br/>
-          client@bank.com / 1234 &nbsp;|&nbsp; admin@bank.com / 1234 &nbsp;|&nbsp; operateur@bank.com / 1234
-        </div>
       </div>
     </div>
   );

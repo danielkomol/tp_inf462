@@ -23,14 +23,17 @@ import OperateurClients      from './pages/operateur/Clients';
 import OperateurTransactions from './pages/operateur/Transactions';
 
 function PrivateRoute({ children, roles }: { children: JSX.Element; roles: string[] }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{padding:40}}>Chargement...</div>;
   if (!user) return <Navigate to="/login" />;
   if (!roles.includes(user.role)) return <Navigate to="/login" />;
   return children;
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{padding:40}}>Chargement...</div>;
+
   return (
     <Routes>
       <Route path="/" element={

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -7,7 +7,7 @@
 
     <!--
         IDENTITE DU PROJET
-        groupId  = comme un nom de domaine inversé (ton organisation)
+        groupId  = comme un nom de domaine inversÃ© (ton organisation)
         artifactId = le nom de ton service
         version  = la version actuelle
     -->
@@ -19,8 +19,8 @@
 
     <!--
         PARENT SPRING BOOT
-        Spring Boot fournit des valeurs par défaut pour tout.
-        Grâce à ce parent, tu n'as pas besoin de configurer grand chose.
+        Spring Boot fournit des valeurs par dÃ©faut pour tout.
+        GrÃ¢ce Ã  ce parent, tu n'as pas besoin de configurer grand chose.
     -->
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -37,7 +37,7 @@
 
         <!-- ============================================
              API REST
-             Permet de créer des endpoints HTTP (GET, POST, PUT, DELETE)
+             Permet de crÃ©er des endpoints HTTP (GET, POST, PUT, DELETE)
              ============================================ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -45,9 +45,9 @@
         </dependency>
 
         <!-- ============================================
-             BASE DE DONNÉES
-             JPA = Java Persistence API : parler à PostgreSQL
-             en écrivant du Java au lieu du SQL brut
+             BASE DE DONNÃ‰ES
+             JPA = Java Persistence API : parler Ã  PostgreSQL
+             en Ã©crivant du Java au lieu du SQL brut
              ============================================ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -63,7 +63,7 @@
 
         <!-- ============================================
              VALIDATION
-             Permet de vérifier les données reçues
+             Permet de vÃ©rifier les donnÃ©es reÃ§ues
              Ex: @NotNull, @Email, @Min, @Max
              ============================================ -->
         <dependency>
@@ -72,9 +72,9 @@
         </dependency>
 
         <!-- ============================================
-             SÉCURITÉ JWT
-             Pour lire et vérifier les tokens JWT
-             envoyés par l'identity-service
+             SÃ‰CURITÃ‰ JWT
+             Pour lire et vÃ©rifier les tokens JWT
+             envoyÃ©s par l'identity-service
              ============================================ -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -96,8 +96,8 @@
 
         <!-- ============================================
              KAFKA
-             Pour envoyer des événements aux autres services
-             Ex: quand un compte est créé → notifier notification-service
+             Pour envoyer des Ã©vÃ©nements aux autres services
+             Ex: quand un compte est crÃ©Ã© â†’ notifier notification-service
              ============================================ -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
@@ -106,7 +106,7 @@
 
         <!-- ============================================
              SWAGGER / OPENAPI
-             Génère automatiquement la documentation de tes APIs
+             GÃ©nÃ¨re automatiquement la documentation de tes APIs
              Accessible sur http://localhost:8082/swagger-ui.html
              ============================================ -->
         <dependency>
@@ -117,7 +117,7 @@
 
         <!-- ============================================
              LOMBOK
-             Évite d'écrire du code répétitif (getters, setters, constructeurs)
+             Ã‰vite d'Ã©crire du code rÃ©pÃ©titif (getters, setters, constructeurs)
              @Getter, @Setter, @AllArgsConstructor, @Builder
              ============================================ -->
         <dependency>
@@ -135,12 +135,33 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <!-- Eureka Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
     </dependencies>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2023.0.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
-            <!-- Plugin qui compile et package ton projet en fichier .jar exécutable -->
+            <!-- Plugin qui compile et package ton projet en fichier .jar exÃ©cutable -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -157,3 +178,4 @@
     </build>
 
 </project>
+

@@ -1,45 +1,65 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-
-const mockTx = [
-  { id:'TX341', client:'Jean Dupont',  type:'Dépôt',    montant:'50 000 F',  commission:'750 F',   date:'12/06/2026 14:28' },
-  { id:'TX340', client:'Alice Mballa', type:'Retrait',  montant:'20 000 F',  commission:'300 F',   date:'12/06/2026 14:10' },
-  { id:'TX339', client:'Paul Nkomo',   type:'Transfert',montant:'100 000 F', commission:'1 500 F', date:'12/06/2026 13:55' },
-  { id:'TX338', client:'Sophie Biya',  type:'Dépôt',    montant:'200 000 F', commission:'3 000 F', date:'12/06/2026 11:20' },
-];
-const typeColor: Record<string,string> = { Dépôt:'success', Retrait:'danger', Transfert:'info' };
-const totalCommission = mockTx.reduce((acc, t) => acc + parseInt(t.commission.replace(/[^0-9]/g,'')), 0);
+import { useAuth } from '../../context/AuthContext';
+import { loanApi } from '../../api/services';
 
 export default function OperateurTransactions() {
-  const [filter, setFilter] = useState('');
-  const filtered = mockTx.filter(t => !filter || t.type === filter);
+  const { user } = useAuth();
+  const [prets, setPrets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+
+  const fetchPrets = () => {
+    if (!user) return;
+    loanApi.getPending(user.id)
+      .then(r => setPrets(r.data?.data ?? r.data ?? []))
+      .catch(() => setPrets([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchPrets(); }, [user]);
+
+  const handleValider = async (id: number, approuve: boolean) => {
+    setError('');
+    try {
+      await loanApi.valider(id, { approuve });
+      setMsg(approuve ? 'Prêt approuvé !' : 'Prêt rejeté.');
+      fetchPrets();
+      setTimeout(() => setMsg(''), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Erreur lors de la validation");
+    }
+  };
 
   return (
     <Layout>
-      <div className="page-title">Transactions</div>
-      <div className="cards-row">
-        <div className="card"><div className="card-label">Total transactions</div><div className="card-value blue">{mockTx.length}</div></div>
-        <div className="card"><div className="card-label">Commissions totales</div><div className="card-value green">{totalCommission.toLocaleString()} F</div></div>
-      </div>
+      <div className="page-title">Dossiers de prêt en attente</div>
+      {msg   && <div className="alert success">{msg}</div>}
+      {error && <div className="alert error">{error}</div>}
       <div className="table-box">
-        <div style={{display:'flex', gap:8, marginBottom:12}}>
-          {['','Dépôt','Retrait','Transfert'].map(f => (
-            <button key={f} className={`btn btn-sm ${filter===f?'btn-primary':''}`}
-              style={filter!==f?{background:'#fff',border:'1px solid #ddd',color:'#333'}:{}}
-              onClick={() => setFilter(f)}>{f||'Tous'}</button>
-          ))}
-        </div>
-        <table>
-          <thead><tr><th>ID</th><th>Client</th><th>Type</th><th>Montant</th><th>Commission</th><th>Date</th><th>Statut</th></tr></thead>
-          <tbody>{filtered.map(t => (
-            <tr key={t.id}><td>{t.id}</td><td>{t.client}</td>
-              <td><span className={`badge ${typeColor[t.type]}`}>{t.type}</span></td>
-              <td>{t.montant}</td><td style={{color:'#27ae60'}}>{t.commission}</td>
-              <td style={{fontSize:'0.8rem'}}>{t.date}</td>
-              <td><span className="badge success">Réussi</span></td>
-            </tr>
-          ))}</tbody>
-        </table>
+        {loading ? <div>Chargement...</div> : prets.length === 0
+          ? <p style={{color:'#888'}}>Aucun dossier en attente.</p>
+          : (
+            <table>
+              <thead><tr><th>Référence</th><th>Client</th><th>Montant</th><th>Durée</th><th>Motif</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody>{prets.map((p: any) => (
+                <tr key={p.id}>
+                  <td>{p.reference}</td>
+                  <td>{p.clientId}</td>
+                  <td>{(p.montantDemande ?? 0).toLocaleString()} XAF</td>
+                  <td>{p.duree} mois</td>
+                  <td>{p.motif}</td>
+                  <td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '—'}</td>
+                  <td style={{display:'flex', gap:4}}>
+                    <button className="btn btn-sm btn-success" onClick={() => handleValider(p.id, true)}>✓ Approuver</button>
+                    <button className="btn btn-sm btn-danger"  onClick={() => handleValider(p.id, false)}>✗ Rejeter</button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )
+        }
       </div>
     </Layout>
   );
