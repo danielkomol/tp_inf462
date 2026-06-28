@@ -14,7 +14,8 @@ export default function Comptes() {
   const [loading, setLoading] = useState(true);
 
   const fetchComptes = () => {
-    accountApi.getAll()
+    if (!user) return;
+    accountApi.getAll(user.id)
       .then(r => setComptes(r.data?.data ?? r.data ?? []))
       .finally(() => setLoading(false));
   };
@@ -34,7 +35,11 @@ export default function Comptes() {
     e.preventDefault();
     setError('');
     try {
-      await accountApi.create({ accountType: form.accountType, operatorId: form.operatorId });
+      await accountApi.create({
+        accountType: form.accountType,
+        operatorId: String(form.operatorId),
+        customerId: user?.id ?? '',
+      });
       setMsg('Compte ouvert avec succès !');
       setShowForm(false);
       fetchComptes();

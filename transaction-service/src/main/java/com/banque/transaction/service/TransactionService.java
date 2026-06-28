@@ -54,11 +54,12 @@ public class TransactionService {
                 .type(Transaction.TransactionType.DEPOT)
                 .status(Transaction.TransactionStatus.EN_COURS)
                 .montant(request.getMontant())
-                .frais(BigDecimal.ZERO) // Pas de frais sur les dépôts
-                .compteSource("CAISSE") // Source = caisse physique
+                .frais(BigDecimal.ZERO)
+                .compteSource("CAISSE")
                 .compteDestinataire(request.getCompteDestinataire())
+                .clientSourceId(request.getClientId())   // pour satisfaire la contrainte NOT NULL
                 .clientDestId(request.getClientId())
-                .operateurSourceId(request.getOperateurId())
+                .operateurSourceId(request.getOperateurId() != null ? request.getOperateurId() : "SYS")
                 .description(request.getDescription())
                 .build();
 

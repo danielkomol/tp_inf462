@@ -25,7 +25,7 @@ export default function Transactions() {
 
   useEffect(() => {
     fetchTx();
-    accountApi.getAll().then(r => {
+    accountApi.getAll(user.id).then(r => {
       const data = r.data?.data ?? r.data ?? [];
       setComptes(data);
       if (data.length > 0) setForm(f => ({ ...f, compteSource: data[0].accountNumber ?? data[0].id }));

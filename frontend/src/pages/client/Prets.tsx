@@ -24,7 +24,7 @@ export default function Prets() {
 
   useEffect(() => {
     fetchPrets();
-    accountApi.getAll().then(r => {
+    accountApi.getAll(user.id).then(r => {
       const d = r.data?.data ?? r.data ?? [];
       setComptes(d);
       if (d.length > 0) setForm(f => ({ ...f, compteVersement: d[0].accountNumber ?? d[0].id }));

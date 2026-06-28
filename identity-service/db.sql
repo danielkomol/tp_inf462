@@ -27,14 +27,11 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role  ON users(role);
 
--- Données initiales : un admin par défaut
--- Mot de passe : Admin@1234 (hashé BCrypt)
-INSERT INTO users (nom, prenom, email, telephone, mot_de_passe, role)
-VALUES (
-    'Admin',
-    'Système',
-    'admin@banque.cm',
-    '+237600000000',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhu2',
-    'ADMIN'
-);
+-- Données initiales
+-- Admin : admin@banque.cm / Admin1234!
+-- Operateur : operateur@banque.cm / Admin1234!
+INSERT INTO users (id, email, password, phone_number, role, enabled, two_factor_enabled, otp_enabled, created_at, updated_at)
+VALUES (UUID(), 'admin@banque.cm', '$2a$12$pBGJLAZF7T6Aq5FudKvMbOk63RbjX0kgh/p448IS4glam19Z9cwgu', '+237600000000', 'ADMIN', 1, 0, 0, NOW(), NOW());
+
+INSERT INTO users (id, email, password, phone_number, role, enabled, two_factor_enabled, otp_enabled, created_at, updated_at)
+VALUES (UUID(), 'operateur@banque.cm', '$2a$12$pBGJLAZF7T6Aq5FudKvMbOk63RbjX0kgh/p448IS4glam19Z9cwgu', '+237600000001', 'OPERATEUR', 1, 0, 0, NOW(), NOW());

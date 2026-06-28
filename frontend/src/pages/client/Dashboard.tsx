@@ -12,7 +12,7 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      accountApi.getAll().catch(() => ({ data: [] })),
+      accountApi.getAll(user.id).catch(() => ({ data: [] })),
       transactionApi.historique(user.id).catch(() => ({ data: [] })),
     ]).then(([accRes, txRes]) => {
       setComptes(accRes.data?.data ?? accRes.data ?? []);

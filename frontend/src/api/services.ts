@@ -10,37 +10,61 @@ export const authApi = {
   register: (data: {
     nom: string; prenom: string; email: string;
     telephone: string; motDePasse: string; role?: string;
-  }) => api.post('/api/auth/register', data),
+  }) => api.post('/api/auth/register', {
+    email: data.email,
+    password: data.motDePasse,
+    phoneNumber: data.telephone,
+    role: data.role ?? 'CLIENT',
+  }),
 
   me: () => api.get('/api/auth/me'),
 };
 
 // ============================================================
-// COMPTES — account-service via /api/accounts/**
+// COMPTES — account-service via /api/v1/accounts/**
 // ============================================================
 export const accountApi = {
-  getAll: () => api.get('/api/accounts/my'),
-  getById: (id: number) => api.get(`/api/accounts/${id}`),
-  create: (data: { accountType: string; operatorId: string; currency?: string }) =>
-    api.post('/api/accounts', data),
+  getAll: (customerId: string) => api.get(`/api/v1/accounts/customer/${customerId}`),
+  getById: (id: number) => api.get(`/api/v1/accounts/${id}`),
+  create: (data: { accountType: string; operatorId: string; customerId: string; currency?: string }) =>
+    api.post('/api/v1/accounts', data),
   credit: (id: number, montant: number, desc: string) =>
-    api.post(`/api/accounts/${id}/credit`, { amount: montant, description: desc }),
+    api.post(`/api/v1/accounts/${id}/credit`, { amount: montant, description: desc }),
   debit: (id: number, montant: number, desc: string) =>
-    api.post(`/api/accounts/${id}/debit`, { amount: montant, description: desc }),
+    api.post(`/api/v1/accounts/${id}/debit`, { amount: montant, description: desc }),
 };
 
 // ============================================================
-// TRANSACTIONS — transaction-service via /api/transactions/**
+// TRANSACTIONS — transaction-service via /api/v1/transactions/**
 // ============================================================
 export const transactionApi = {
   depot: (data: { compteDestinataire: string; montant: number; clientId: string; operateurId: string; description: string }) =>
-    api.post('/api/v1/transactions/depot', data),
+    api.post('/api/v1/transactions/depot', {
+      compteDestinataire: data.compteDestinataire,
+      montant: data.montant,
+      description: data.description || 'Dépôt',
+      clientId: data.clientId,
+      operateurId: data.operateurId,
+    }),
 
   retrait: (data: { compteSource: string; montant: number; clientId: string; operateurId: string; description: string }) =>
-    api.post('/api/v1/transactions/retrait', data),
+    api.post('/api/v1/transactions/retrait', {
+      compteSource: data.compteSource,
+      montant: data.montant,
+      description: data.description || 'Retrait',
+      clientId: data.clientId,
+      operateurId: data.operateurId,
+    }),
 
   transfert: (data: { compteSource: string; compteDestinataire: string; montant: number; clientId: string; operateurSourceId: string; description: string }) =>
-    api.post('/api/v1/transactions/transfert', data),
+    api.post('/api/v1/transactions/transfert', {
+      compteSource: data.compteSource,
+      compteDestinataire: data.compteDestinataire,
+      montant: data.montant,
+      description: data.description || 'Transfert',
+      clientSourceId: data.clientId,
+      operateurSourceId: data.operateurSourceId,
+    }),
 
   historique: (clientId: string) =>
     api.get(`/api/v1/transactions/client/${clientId}`),
@@ -67,7 +91,7 @@ export const loanApi = {
 };
 
 // ============================================================
-// CLIENTS — customer-service via /api/customers/**
+// CLIENTS — customer-service via /api/v1/customers/**
 // ============================================================
 export const customerApi = {
   getAll: () => api.get('/api/v1/customers'),

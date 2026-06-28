@@ -73,21 +73,23 @@ public class AccountService {
         Account savedAccount = accountRepository.save(account);
         log.info("Compte créé avec succès : {}", savedAccount.getAccountNumber());
 
-        // 5. Publier l'événement sur Kafka
-        // Les autres services seront notifiés automatiquement
-        AccountEvent.AccountCreated event = AccountEvent.AccountCreated.builder()
-                .accountId(savedAccount.getId())
-                .accountNumber(savedAccount.getAccountNumber())
-                .customerId(savedAccount.getCustomerId())
-                .accountType(savedAccount.getAccountType().name())
-                .initialBalance(savedAccount.getBalance())
-                .currency(savedAccount.getCurrency())
-                .operatorId(savedAccount.getOperatorId())
-                .occurredAt(LocalDateTime.now())
-                .build();
-
-        kafkaTemplate.send(TOPIC_ACCOUNT_CREATED, savedAccount.getCustomerId(), event);
-        log.info("Événement AccountCreated publié sur Kafka pour le compte : {}", accountNumber);
+        // 5. Publier l'événement sur Kafka (non bloquant)
+        try {
+            AccountEvent.AccountCreated event = AccountEvent.AccountCreated.builder()
+                    .accountId(savedAccount.getId())
+                    .accountNumber(savedAccount.getAccountNumber())
+                    .customerId(savedAccount.getCustomerId())
+                    .accountType(savedAccount.getAccountType().name())
+                    .initialBalance(savedAccount.getBalance())
+                    .currency(savedAccount.getCurrency())
+                    .operatorId(savedAccount.getOperatorId())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            kafkaTemplate.send(TOPIC_ACCOUNT_CREATED, savedAccount.getCustomerId(), event);
+            log.info("Événement AccountCreated publié sur Kafka pour le compte : {}", accountNumber);
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement AccountCreated ignoré : {}", e.getMessage());
+        }
 
         // 6. Retourner la réponse (DTO, pas l'entité directement)
         return mapToResponse(savedAccount);
@@ -149,17 +151,20 @@ public class AccountService {
         Account updatedAccount = accountRepository.save(account);
 
         // 5. Publier l'événement Kafka
-        AccountEvent.AccountCredited event = AccountEvent.AccountCredited.builder()
-                .accountId(updatedAccount.getId())
-                .accountNumber(updatedAccount.getAccountNumber())
-                .customerId(updatedAccount.getCustomerId())
-                .amount(request.getAmount())
-                .newBalance(newBalance)
-                .description(request.getDescription())
-                .occurredAt(LocalDateTime.now())
-                .build();
-
-        kafkaTemplate.send(TOPIC_ACCOUNT_CREDITED, updatedAccount.getCustomerId(), event);
+        try {
+            AccountEvent.AccountCredited event = AccountEvent.AccountCredited.builder()
+                    .accountId(updatedAccount.getId())
+                    .accountNumber(updatedAccount.getAccountNumber())
+                    .customerId(updatedAccount.getCustomerId())
+                    .amount(request.getAmount())
+                    .newBalance(newBalance)
+                    .description(request.getDescription())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            kafkaTemplate.send(TOPIC_ACCOUNT_CREDITED, updatedAccount.getCustomerId(), event);
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement AccountCredited ignoré : {}", e.getMessage());
+        }
 
         return mapToResponse(updatedAccount);
     }
@@ -196,17 +201,20 @@ public class AccountService {
         Account updatedAccount = accountRepository.save(account);
 
         // Publier l'événement Kafka
-        AccountEvent.AccountDebited event = AccountEvent.AccountDebited.builder()
-                .accountId(updatedAccount.getId())
-                .accountNumber(updatedAccount.getAccountNumber())
-                .customerId(updatedAccount.getCustomerId())
-                .amount(request.getAmount())
-                .newBalance(newBalance)
-                .description(request.getDescription())
-                .occurredAt(LocalDateTime.now())
-                .build();
-
-        kafkaTemplate.send(TOPIC_ACCOUNT_DEBITED, updatedAccount.getCustomerId(), event);
+        try {
+            AccountEvent.AccountDebited event = AccountEvent.AccountDebited.builder()
+                    .accountId(updatedAccount.getId())
+                    .accountNumber(updatedAccount.getAccountNumber())
+                    .customerId(updatedAccount.getCustomerId())
+                    .amount(request.getAmount())
+                    .newBalance(newBalance)
+                    .description(request.getDescription())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            kafkaTemplate.send(TOPIC_ACCOUNT_DEBITED, updatedAccount.getCustomerId(), event);
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement AccountDebited ignoré : {}", e.getMessage());
+        }
 
         return mapToResponse(updatedAccount);
     }
@@ -275,15 +283,19 @@ public class AccountService {
      * Publie un événement de changement de statut sur Kafka
      */
     private void publishStatusChanged(Account account, String oldStatus) {
-        AccountEvent.AccountStatusChanged event = AccountEvent.AccountStatusChanged.builder()
-                .accountId(account.getId())
-                .accountNumber(account.getAccountNumber())
-                .customerId(account.getCustomerId())
-                .oldStatus(oldStatus)
-                .newStatus(account.getStatus().name())
-                .occurredAt(LocalDateTime.now())
-                .build();
-        kafkaTemplate.send(TOPIC_STATUS_CHANGED, account.getCustomerId(), event);
+        try {
+            AccountEvent.AccountStatusChanged event = AccountEvent.AccountStatusChanged.builder()
+                    .accountId(account.getId())
+                    .accountNumber(account.getAccountNumber())
+                    .customerId(account.getCustomerId())
+                    .oldStatus(oldStatus)
+                    .newStatus(account.getStatus().name())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            kafkaTemplate.send(TOPIC_STATUS_CHANGED, account.getCustomerId(), event);
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement StatusChanged ignoré : {}", e.getMessage());
+        }
     }
 
     /**

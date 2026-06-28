@@ -66,6 +66,9 @@ public class AuthService {
                 .password(passwordEncoder.encode(req.getPassword()))
                 .phoneNumber(req.getPhoneNumber())
                 .role(req.getRole())
+                .enabled(true)
+                .twoFactorEnabled(false)
+                .otpEnabled(false)
                 .build();
 
         user = userRepository.save(user);
