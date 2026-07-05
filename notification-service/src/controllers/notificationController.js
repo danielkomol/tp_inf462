@@ -8,8 +8,51 @@ const { getNotificationsClient } = require('../services/notificationService');
 const Notification = require('../models/Notification');
 
 /**
+ * GET /api/v1/notifications/:clientId
+ * Récupérer les notifications d'un client (route principale du frontend)
+ */
+router.get('/:clientId', async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    // Si c'est un ObjectId MongoDB, chercher par ID de notification
+    // Sinon chercher par clientId
+    if (clientId.match(/^[0-9a-fA-F]{24}$/)) {
+      // C'est un ID MongoDB — chercher une notification spécifique
+      const notification = await Notification.findById(clientId);
+      if (!notification) {
+        // Pas trouvé comme ID → essayer comme clientId
+        const result = await getNotificationsClient(clientId);
+        return res.json({ success: true, data: result.notifications });
+      }
+      return res.json({ success: true, data: notification });
+    }
+    // C'est un UUID de client
+    const result = await getNotificationsClient(clientId);
+    res.json({ success: true, data: result.notifications });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/notifications/:clientId/read-all
+ * Marquer toutes les notifications d'un client comme lues
+ */
+router.put('/:clientId/read-all', async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { clientId: req.params.clientId },
+      { $set: { lu: true } }
+    );
+    res.json({ success: true, message: 'Toutes les notifications marquées comme lues' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /api/v1/notifications/client/:clientId
- * Récupérer toutes les notifications d'un client
+ * Récupérer toutes les notifications d'un client (route alternative)
  */
 router.get('/client/:clientId', async (req, res) => {
   try {

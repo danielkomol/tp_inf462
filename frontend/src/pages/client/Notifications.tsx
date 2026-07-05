@@ -11,7 +11,11 @@ export default function Notifications() {
   const fetchNotifs = () => {
     if (!user) return;
     notificationApi.getMyNotifs(user.id)
-      .then(r => setNotifs(r.data?.data ?? r.data ?? []))
+      .then(r => {
+        const data = r.data?.data ?? r.data ?? [];
+        const list = Array.isArray(data) ? data : (data.notifications ?? []);
+        setNotifs(list);
+      })
       .catch(() => setNotifs([]))
       .finally(() => setLoading(false));
   };

@@ -197,7 +197,13 @@ public class TransactionService {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        kafkaTemplate.send(TOPIC_INTER, transaction.getReference(), sagaEvent);
+        try {
+            kafkaTemplate.send(TOPIC_INTER, transaction.getReference(), sagaEvent);
+        } catch (org.apache.kafka.common.KafkaException e) {
+            log.warn("Kafka indisponible (producer), événement INTER ignoré : {}", e.getMessage());
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement INTER ignoré : {}", e.getMessage());
+        }
 
         // Valider après publication
         transaction.setStatus(Transaction.TransactionStatus.VALIDEE);
@@ -262,23 +268,29 @@ public class TransactionService {
 
     /**
      * Publie un événement TransactionValidated sur Kafka
+     * Non-bloquant : si Kafka est indisponible, la transaction reste validée
      */
     private void publierTransactionValidee(Transaction transaction) {
-        TransactionEvent.TransactionValidated event = TransactionEvent.TransactionValidated.builder()
-                .transactionId(transaction.getId())
-                .reference(transaction.getReference())
-                .type(transaction.getType().name())
-                .montant(transaction.getMontant())
-                .frais(transaction.getFrais())
-                .compteSource(transaction.getCompteSource())
-                .compteDestinataire(transaction.getCompteDestinataire())
-                .clientSourceId(transaction.getClientSourceId())
-                .clientDestId(transaction.getClientDestId())
-                .description(transaction.getDescription())
-                .occurredAt(LocalDateTime.now())
-                .build();
-
-        kafkaTemplate.send(TOPIC_VALIDATED, transaction.getReference(), event);
+        try {
+            TransactionEvent.TransactionValidated event = TransactionEvent.TransactionValidated.builder()
+                    .transactionId(transaction.getId())
+                    .reference(transaction.getReference())
+                    .type(transaction.getType().name())
+                    .montant(transaction.getMontant())
+                    .frais(transaction.getFrais())
+                    .compteSource(transaction.getCompteSource())
+                    .compteDestinataire(transaction.getCompteDestinataire())
+                    .clientSourceId(transaction.getClientSourceId())
+                    .clientDestId(transaction.getClientDestId())
+                    .description(transaction.getDescription())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            kafkaTemplate.send(TOPIC_VALIDATED, transaction.getReference(), event);
+        } catch (org.apache.kafka.common.KafkaException e) {
+            log.warn("Kafka indisponible (producer), événement ignoré pour la transaction {} : {}", transaction.getReference(), e.getMessage());
+        } catch (Exception e) {
+            log.warn("Kafka indisponible, événement ignoré pour la transaction {} : {}", transaction.getReference(), e.getMessage());
+        }
     }
 
     /**

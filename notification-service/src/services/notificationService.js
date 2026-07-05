@@ -23,6 +23,20 @@ const traiterEvenement = async (eventType, eventData) => {
     return;
   }
 
+  // Toujours sauvegarder en base (visible dans le frontend)
+  const notifBase = new Notification({
+    clientId,
+    eventType,
+    canal: 'IN_APP',
+    destinataire: clientId,
+    sujet,
+    message,
+    statut: 'ENVOYE',
+    donneesEvenement: eventData
+  });
+  await notifBase.save().catch(e => console.error('Erreur sauvegarde notif:', e.message));
+  console.log(`✅ Notification in-app sauvegardée pour client ${clientId}`);
+
   // Envoyer par EMAIL si email disponible
   if (email) {
     await envoyerEtSauvegarder({
@@ -110,30 +124,40 @@ const construireMessage = (eventType, data) => {
   switch (eventType) {
 
     case 'TRANSACTION_VALIDATED':
+    case 'TRANSACTION.VALIDATED':
       return {
-        clientId: data.clientSourceId || data.clientDestId,
+        clientId: data.clientSourceId || data.clientDestId || data.clientId,
         email: data.emailClient,
         telephone: data.telephoneClient,
         sujet: '✅ Transaction confirmée — Banque Platform',
-        message: `Votre transaction a été confirmée.\n\nRéférence : ${data.reference}\nMontant : ${data.montant} XAF\nFrais : ${data.frais} XAF\nType : ${data.type}\n\nMerci de votre confiance.`
+        message: `Votre transaction a été confirmée.\n\nRéférence : ${data.reference || 'N/A'}\nMontant : ${data.montant || 0} XAF\nFrais : ${data.frais || 0} XAF\nType : ${data.type || 'N/A'}\n\nMerci de votre confiance.`
       };
 
     case 'TRANSACTION_FAILED':
       return {
-        clientId: data.clientSourceId,
+        clientId: data.clientSourceId || data.clientId,
         email: data.emailClient,
         telephone: data.telephoneClient,
         sujet: '❌ Transaction échouée — Banque Platform',
-        message: `Votre transaction a échoué.\n\nRéférence : ${data.reference}\nMontant : ${data.montant} XAF\nMotif : ${data.motifEchec}\n\nContactez votre opérateur pour plus d'informations.`
+        message: `Votre transaction a échoué.\n\nRéférence : ${data.reference || 'N/A'}\nMontant : ${data.montant || 0} XAF\nMotif : ${data.motifEchec || 'Inconnu'}`
       };
 
     case 'ACCOUNT_CREATED':
       return {
-        clientId: data.customerId,
+        clientId: data.customerId || data.clientId,
         email: data.emailClient,
         telephone: data.telephoneClient,
         sujet: '🏦 Compte ouvert — Banque Platform',
-        message: `Votre compte a été ouvert avec succès.\n\nNuméro de compte : ${data.accountNumber}\nType : ${data.accountType}\nDevise : ${data.currency}\n\nBienvenue sur la plateforme !`
+        message: `Votre compte a été ouvert avec succès.\n\nNuméro : ${data.accountNumber || 'N/A'}\nType : ${data.accountType || 'N/A'}`
+      };
+
+    case 'LOAN_SUBMITTED':
+      return {
+        clientId: data.clientId,
+        email: data.emailClient,
+        telephone: data.telephoneClient,
+        sujet: '📋 Demande de prêt reçue — Banque Platform',
+        message: `Votre demande de prêt a été soumise.\n\nRéférence : ${data.reference || 'N/A'}\nMontant : ${data.montantDemande || 0} XAF\nDurée : ${data.duree || 0} mois\n\nElle sera traitée dans les plus brefs délais.`
       };
 
     case 'LOAN_VALIDATED':
@@ -142,7 +166,7 @@ const construireMessage = (eventType, data) => {
         email: data.emailClient,
         telephone: data.telephoneClient,
         sujet: '✅ Prêt approuvé — Banque Platform',
-        message: `Votre demande de prêt a été approuvée !\n\nMontant accordé : ${data.montantAccorde} XAF\nDurée : ${data.duree} mois\nTaux : ${data.tauxInteret}%\n\nConsultez votre échéancier dans l'application.`
+        message: `Votre demande de prêt a été approuvée !\n\nMontant accordé : ${data.montantAccorde || 0} XAF\nDurée : ${data.duree || 0} mois\nTaux : ${data.tauxInteret || 0}%`
       };
 
     case 'LOAN_REJECTED':
@@ -151,7 +175,7 @@ const construireMessage = (eventType, data) => {
         email: data.emailClient,
         telephone: data.telephoneClient,
         sujet: '❌ Demande de prêt refusée — Banque Platform',
-        message: `Votre demande de prêt a été refusée.\n\nMotif : ${data.motifRejet}\n\nVous pouvez soumettre une nouvelle demande après 3 mois.`
+        message: `Votre demande de prêt a été refusée.\n\nMotif : ${data.motifRejet || 'Non spécifié'}`
       };
 
     case 'REPAYMENT_DUE':

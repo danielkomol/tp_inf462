@@ -24,7 +24,7 @@ export default function Prets() {
 
   useEffect(() => {
     fetchPrets();
-    accountApi.getAll(user.id).then(r => {
+    accountApi.getAll(user!.id).then(r => {
       const d = r.data?.data ?? r.data ?? [];
       setComptes(d);
       if (d.length > 0) setForm(f => ({ ...f, compteVersement: d[0].accountNumber ?? d[0].id }));
@@ -34,6 +34,10 @@ export default function Prets() {
       setOperateurs(ops);
       if (ops.length > 0) setForm(f => ({ ...f, operateurId: String(ops[0].id ?? ops[0].code) }));
     }).catch(() => {});
+
+    // Rafraîchissement automatique toutes les 30s pour voir le statut mis à jour par l'admin
+    const interval = setInterval(fetchPrets, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +82,10 @@ export default function Prets() {
       {tab === 'liste' && (
         loading ? <div>Chargement...</div> : (
           <div className="table-box">
+            <div style={{display:'flex', justifyContent:'space-between', marginBottom:8}}>
+              <span style={{color:'#888', fontSize:'0.85rem'}}>Mis à jour automatiquement toutes les 30s</span>
+              <button className="btn btn-sm" style={{background:'#fff',border:'1px solid #ddd'}} onClick={fetchPrets}>🔄 Rafraîchir</button>
+            </div>
             {prets.length === 0 ? <p style={{color:'#888'}}>Aucun prêt en cours.</p> : (
               <table>
                 <thead><tr><th>Référence</th><th>Montant demandé</th><th>Accordé</th><th>Durée</th><th>Taux</th><th>Statut</th></tr></thead>

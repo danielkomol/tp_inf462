@@ -10,11 +10,13 @@ export default function Transactions() {
   const [tab, setTab] = useState('historique');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [comptes, setComptes] = useState<any[]>([]);
+  const [tousLesComptes, setTousLesComptes] = useState<any[]>([]);
   const [form, setForm] = useState({ type: 'DEPOT', montant: '', compteSource: '', compteDestinataire: '', description: '' });
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [destMode, setDestMode] = useState<'mes-comptes' | 'tous' | 'manuel'>('mes-comptes');
 
   const fetchTx = () => {
     if (!user) return;
@@ -24,11 +26,18 @@ export default function Transactions() {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchTx();
+    // Mes comptes (source)
     accountApi.getAll(user.id).then(r => {
       const data = r.data?.data ?? r.data ?? [];
       setComptes(data);
       if (data.length > 0) setForm(f => ({ ...f, compteSource: data[0].accountNumber ?? data[0].id }));
+    }).catch(() => {});
+    // Tous les comptes de la plateforme (destinataire)
+    accountApi.getAllAccounts().then(r => {
+      const data = r.data?.data ?? r.data ?? [];
+      setTousLesComptes(data);
     }).catch(() => {});
   }, [user]);
 
@@ -37,13 +46,33 @@ export default function Transactions() {
     if (!user) return;
     setError(''); setSubmitting(true);
     try {
-      const operateurId = comptes.find((c: any) => (c.accountNumber ?? c.id) === form.compteSource)?.operatorId ?? '';
+      const compte = comptes.find((c: any) => (c.accountNumber ?? c.id) === form.compteSource);
+      const operateurId = compte?.operatorId ?? '';
+      const accountId = compte?.id;
+
       if (form.type === 'DEPOT') {
-        await transactionApi.depot({ compteDestinataire: form.compteSource, montant: Number(form.montant), clientId: user.id, operateurId, description: form.description });
+        await transactionApi.depot({ compteDestinataire: form.compteSource, montant: Number(form.montant), clientId: user.id, operateurId, description: form.description || 'Dépôt' });
+        if (accountId) await accountApi.credit(accountId, Number(form.montant), form.description || 'Dépôt');
       } else if (form.type === 'RETRAIT') {
-        await transactionApi.retrait({ compteSource: form.compteSource, montant: Number(form.montant), clientId: user.id, operateurId, description: form.description });
+        await transactionApi.retrait({ compteSource: form.compteSource, montant: Number(form.montant), clientId: user.id, operateurId, description: form.description || 'Retrait' });
+        if (accountId) await accountApi.debit(accountId, Number(form.montant), form.description || 'Retrait');
       } else {
-        await transactionApi.transfert({ compteSource: form.compteSource, compteDestinataire: form.compteDestinataire, montant: Number(form.montant), clientId: user.id, operateurSourceId: operateurId, description: form.description });
+        await transactionApi.transfert({ compteSource: form.compteSource, compteDestinataire: form.compteDestinataire, montant: Number(form.montant), clientId: user.id, operateurSourceId: operateurId, description: form.description || 'Transfert' });
+        // Débiter le compte source
+        if (accountId) await accountApi.debit(accountId, Number(form.montant), form.description || 'Transfert');
+        // Créditer le compte destinataire
+        const allComptes = [...comptes, ...tousLesComptes];
+        const compteDest = allComptes.find((c: any) => (c.accountNumber ?? c.id) === form.compteDestinataire);
+        if (compteDest?.id) {
+          await accountApi.credit(compteDest.id, Number(form.montant), form.description || 'Transfert reçu');
+        } else {
+          // Saisie manuelle — récupérer le compte par son numéro
+          try {
+            const r = await accountApi.getByNumber(form.compteDestinataire);
+            const dest = r.data?.data ?? r.data;
+            if (dest?.id) await accountApi.credit(dest.id, Number(form.montant), form.description || 'Transfert reçu');
+          } catch { /* compte non trouvé */ }
+        }
       }
       setMsg('Opération effectuée avec succès !');
       setTab('historique');
@@ -100,31 +129,115 @@ export default function Transactions() {
         <div className="form-box">
           <h2>Nouvelle opération</h2>
           <form onSubmit={handleSubmit}>
-            <div className="form-group"><label>Type d'opération</label>
-              <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
-                <option value="DEPOT">Dépôt</option>
-                <option value="RETRAIT">Retrait</option>
-                <option value="TRANSFERT_INTRA">Transfert</option>
-              </select></div>
-            <div className="form-group"><label>Compte {form.type === 'DEPOT' ? 'destinataire' : 'source'}</label>
+
+            {/* Type d'opération */}
+            <div className="form-group">
+              <label>Type d'opération</label>
+              <select value={form.type} onChange={e => setForm({...form, type: e.target.value, compteDestinataire: ''})}>
+                <option value="DEPOT">💰 Dépôt</option>
+                <option value="RETRAIT">💸 Retrait</option>
+                <option value="TRANSFERT_INTRA">🔄 Transfert</option>
+              </select>
+            </div>
+
+            {/* Compte source / destinataire pour dépôt/retrait */}
+            <div className="form-group">
+              <label>Compte {form.type === 'DEPOT' ? 'destinataire (le mien)' : 'source'}</label>
               <select value={form.compteSource} onChange={e => setForm({...form, compteSource: e.target.value})}>
                 {comptes.map((c: any) => (
-                  <option key={c.id} value={c.accountNumber ?? c.id}>{c.accountType} — {c.accountNumber ?? c.id}</option>
+                  <option key={c.id} value={c.accountNumber ?? c.id}>
+                    {c.accountType} — {c.accountNumber ?? c.id} ({(c.balance ?? 0).toLocaleString()} XAF)
+                  </option>
                 ))}
-              </select></div>
-            {form.type !== 'DEPOT' && form.type !== 'RETRAIT' && (
-              <div className="form-group"><label>Compte destinataire</label>
-                <input required placeholder="N° compte destinataire" value={form.compteDestinataire}
-                  onChange={e => setForm({...form, compteDestinataire: e.target.value})} /></div>
+              </select>
+            </div>
+
+            {/* Section destinataire pour transfert */}
+            {form.type === 'TRANSFERT_INTRA' && (
+              <div className="form-group">
+                <label>Compte destinataire</label>
+
+                {/* Toggle mes comptes / autre utilisateur */}
+                <div style={{display:'flex', gap:8, marginBottom:10}}>
+                  <button type="button"
+                    className={`btn btn-sm ${destMode === 'mes-comptes' ? 'btn-primary' : ''}`}
+                    style={destMode !== 'mes-comptes' ? {background:'#f5f5f5', border:'1px solid #ddd', color:'#555'} : {}}
+                    onClick={() => { setDestMode('mes-comptes'); setForm(f => ({...f, compteDestinataire:''})); }}>
+                    👤 Mes comptes
+                  </button>
+                  <button type="button"
+                    className={`btn btn-sm ${destMode === 'tous' ? 'btn-primary' : ''}`}
+                    style={destMode !== 'tous' ? {background:'#f5f5f5', border:'1px solid #ddd', color:'#555'} : {}}
+                    onClick={() => { setDestMode('tous'); setForm(f => ({...f, compteDestinataire:''})); }}>
+                    🌐 Autre utilisateur
+                  </button>
+                  <button type="button"
+                    className={`btn btn-sm ${destMode === 'manuel' ? 'btn-primary' : ''}`}
+                    style={destMode !== 'manuel' ? {background:'#f5f5f5', border:'1px solid #ddd', color:'#555'} : {}}
+                    onClick={() => { setDestMode('manuel'); setForm(f => ({...f, compteDestinataire:''})); }}>
+                    ✏️ Saisie libre
+                  </button>
+                </div>
+
+                {/* Mes comptes */}
+                {destMode === 'mes-comptes' && (
+                  <select required value={form.compteDestinataire}
+                    onChange={e => setForm({...form, compteDestinataire: e.target.value})}>
+                    <option value="">-- Choisir un de mes comptes --</option>
+                    {comptes
+                      .filter((c: any) => (c.accountNumber ?? c.id) !== form.compteSource)
+                      .map((c: any) => (
+                        <option key={c.id} value={c.accountNumber ?? c.id}>
+                          {c.accountType} — {c.accountNumber ?? c.id} ({(c.balance ?? 0).toLocaleString()} XAF)
+                        </option>
+                      ))}
+                  </select>
+                )}
+
+                {/* Tous les comptes de la plateforme */}
+                {destMode === 'tous' && (
+                  <select required value={form.compteDestinataire}
+                    onChange={e => setForm({...form, compteDestinataire: e.target.value})}>
+                    <option value="">-- Choisir un compte --</option>
+                    {tousLesComptes
+                      .filter((c: any) => (c.accountNumber ?? c.id) !== form.compteSource)
+                      .map((c: any) => (
+                        <option key={c.id} value={c.accountNumber ?? c.id}>
+                          {c.accountNumber ?? c.id} — {c.accountType}
+                        </option>
+                      ))}
+                    {tousLesComptes.length === 0 && (
+                      <option disabled>Chargement des comptes...</option>
+                    )}
+                  </select>
+                )}
+
+                {/* Saisie manuelle */}
+                {destMode === 'manuel' && (
+                  <input required placeholder="Entrez le numéro de compte (ex: MM1234567890)"
+                    value={form.compteDestinataire}
+                    onChange={e => setForm({...form, compteDestinataire: e.target.value})}
+                    style={{width:'100%', padding:'8px 12px', border:'1px solid #ddd', borderRadius:6}} />
+                )}
+              </div>
             )}
-            <div className="form-group"><label>Montant (XAF)</label>
+
+            {/* Montant */}
+            <div className="form-group">
+              <label>Montant (XAF)</label>
               <input type="number" min="1" required value={form.montant}
-                onChange={e => setForm({...form, montant: e.target.value})} /></div>
-            <div className="form-group"><label>Description</label>
-              <input placeholder="Motif (optionnel)" value={form.description}
-                onChange={e => setForm({...form, description: e.target.value})} /></div>
+                onChange={e => setForm({...form, montant: e.target.value})} />
+            </div>
+
+            {/* Description */}
+            <div className="form-group">
+              <label>Description <span style={{color:'#aaa', fontSize:'0.8rem'}}>(optionnel)</span></label>
+              <input placeholder="Ex: Loyer, remboursement..." value={form.description}
+                onChange={e => setForm({...form, description: e.target.value})} />
+            </div>
+
             <button className="btn btn-success" type="submit" disabled={submitting}>
-              {submitting ? 'Traitement...' : 'Confirmer'}
+              {submitting ? '⏳ Traitement...' : '✅ Confirmer'}
             </button>
           </form>
         </div>

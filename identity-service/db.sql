@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     nom           VARCHAR(100)  NOT NULL,
     prenom        VARCHAR(100)  NOT NULL,
     email         VARCHAR(255)  NOT NULL UNIQUE,
-    telephone     VARCHAR(20)   NOT NULL UNIQUE,
+    telephone     VARCHAR(20)   NOT NULL UNIQUE,on va faire 
     mot_de_passe  VARCHAR(255)  NOT NULL,
     role          ENUM('CLIENT', 'OPERATEUR', 'ADMIN') NOT NULL DEFAULT 'CLIENT',
     actif         TINYINT(1)    NOT NULL DEFAULT 1,

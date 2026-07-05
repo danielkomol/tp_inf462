@@ -24,6 +24,10 @@ const transporter = nodemailer.createTransport({
  * @param {string} message - Corps du message (texte ou HTML)
  */
 const envoyerEmail = async (destinataire, sujet, message) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.log(`[EMAIL SIMULÉ] → ${destinataire} | ${sujet} | ${message}`);
+    return { success: true, simulated: true };
+  }
   try {
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
@@ -52,7 +56,7 @@ const envoyerEmail = async (destinataire, sujet, message) => {
 
   } catch (error) {
     console.error(`❌ Erreur envoi email à ${destinataire} :`, error.message);
-    throw error;
+    return { success: false, error: error.message };
   }
 };
 

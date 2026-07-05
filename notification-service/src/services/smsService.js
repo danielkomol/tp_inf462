@@ -1,35 +1,36 @@
-// ==============================================
-// SERVICE SMS — Twilio
-// ==============================================
-// Twilio est un service d'envoi de SMS en ligne
+// SERVICE SMS — Twilio (optionnel)
+// Si les credentials ne sont pas configurés, les SMS sont simulés en console.
 
-const twilio = require('twilio');
+let client = null;
 
-// Initialiser le client Twilio avec les credentials
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  try {
+    const twilio = require('twilio');
+    client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    console.log('✅ Twilio initialisé');
+  } catch (e) {
+    console.warn('⚠️  Twilio non disponible :', e.message);
+  }
+} else {
+  console.warn('⚠️  Twilio non configuré — SMS simulés en console uniquement');
+}
 
-/**
- * ENVOYER UN SMS
- * @param {string} telephone - Numéro de téléphone (format international : +237...)
- * @param {string} message - Texte du SMS (max 160 caractères)
- */
 const envoyerSMS = async (telephone, message) => {
+  if (!client) {
+    console.log(`[SMS SIMULÉ] → ${telephone} : ${message}`);
+    return { success: true, simulated: true };
+  }
   try {
     const result = await client.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: telephone
     });
-
     console.log(`✅ SMS envoyé à ${telephone} : ${result.sid}`);
     return { success: true, sid: result.sid };
-
   } catch (error) {
-    console.error(`❌ Erreur envoi SMS à ${telephone} :`, error.message);
-    throw error;
+    console.error(`❌ Erreur SMS à ${telephone} :`, error.message);
+    return { success: false, error: error.message };
   }
 };
 

@@ -27,7 +27,7 @@ const NotificationSchema = new mongoose.Schema({
   // Canal d'envoi
   canal: {
     type: String,
-    enum: ['EMAIL', 'SMS', 'PUSH'],
+    enum: ['EMAIL', 'SMS', 'PUSH', 'IN_APP'],
     required: true
   },
 
@@ -59,6 +59,12 @@ const NotificationSchema = new mongoose.Schema({
 
   // Erreur si envoi échoué
   erreur: String,
+
+  // Lu ou non (pour le frontend)
+  lu: {
+    type: Boolean,
+    default: false
+  },
 
   // Données de l'événement source (pour traçabilité)
   donneesEvenement: mongoose.Schema.Types.Mixed,

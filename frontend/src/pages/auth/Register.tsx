@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/services';
+import api from '../../api/axios';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,7 +15,22 @@ export default function Register() {
     setError('');
     setSubmitting(true);
     try {
-      await authApi.register({ ...form, role: 'CLIENT' });
+      const res = await authApi.register({ ...form, role: 'CLIENT' });
+      // Créer automatiquement le profil client dans customer-service
+      const userId = res.data?.userId ?? res.data?.data?.userId;
+      if (userId) {
+        try {
+          await api.post('/api/v1/customers', {
+            userId,
+            nom: form.nom,
+            prenom: form.prenom,
+            email: form.email,
+            telephone: form.telephone,
+          });
+        } catch {
+          // Le profil sera créé plus tard — non bloquant
+        }
+      }
       setSuccess(true);
       setTimeout(() => navigate('/login'), 1800);
     } catch (err: any) {

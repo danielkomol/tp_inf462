@@ -16,10 +16,12 @@ export default function Audit() {
 
   useEffect(() => {
     Promise.all([
-      auditApi.getLogs({ taille: 100 }).catch(() => ({ data: [] })),
+      auditApi.getLogs({ taille: 100 }).catch(() => ({ data: {} })),
       auditApi.getStats().catch(() => ({ data: {} })),
     ]).then(([logsRes, statsRes]) => {
-      setLogs(logsRes.data?.data ?? logsRes.data ?? []);
+      const logsData = logsRes.data?.data ?? logsRes.data ?? {};
+      const logsList = Array.isArray(logsData) ? logsData : (logsData.logs ?? []);
+      setLogs(logsList);
       setStats(statsRes.data?.data ?? statsRes.data ?? {});
     }).finally(() => setLoading(false));
   }, []);
@@ -49,7 +51,7 @@ export default function Audit() {
             <tbody>{filtered.map((a: any, i: number) => (
               <tr key={i}>
                 <td><span className={`badge ${actionColor[a.eventType ?? a.action] ?? 'info'}`}>{a.eventType ?? a.action}</span></td>
-                <td>{a.userId ?? a.user ?? '—'}</td>
+                <td>{a.description || a.userId || '—'}</td>
                 <td style={{fontSize:'0.8rem',color:'#888'}}>{a.service}</td>
                 <td>{a.ipAddress ?? a.ip ?? '—'}</td>
                 <td style={{fontSize:'0.8rem'}}>{a.timestamp ? new Date(a.timestamp).toLocaleString('fr-FR') : a.date}</td>

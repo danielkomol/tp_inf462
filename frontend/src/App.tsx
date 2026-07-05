@@ -16,6 +16,7 @@ import Utilisateurs   from './pages/admin/Utilisateurs';
 import Operateurs     from './pages/admin/Operateurs';
 import Audit          from './pages/admin/Audit';
 import Rapports       from './pages/admin/Rapports';
+import AdminPrets     from './pages/admin/Prets';
 
 import OperateurDashboard    from './pages/operateur/Dashboard';
 import Regles                from './pages/operateur/Regles';
@@ -56,6 +57,7 @@ function AppRoutes() {
       <Route path="/admin/dashboard"    element={<PrivateRoute roles={['ADMIN']}><AdminDashboard /></PrivateRoute>} />
       <Route path="/admin/utilisateurs" element={<PrivateRoute roles={['ADMIN']}><Utilisateurs /></PrivateRoute>} />
       <Route path="/admin/operateurs"   element={<PrivateRoute roles={['ADMIN']}><Operateurs /></PrivateRoute>} />
+      <Route path="/admin/prets"        element={<PrivateRoute roles={['ADMIN']}><AdminPrets /></PrivateRoute>} />
       <Route path="/admin/audit"        element={<PrivateRoute roles={['ADMIN']}><Audit /></PrivateRoute>} />
       <Route path="/admin/rapports"     element={<PrivateRoute roles={['ADMIN']}><Rapports /></PrivateRoute>} />
 

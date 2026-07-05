@@ -25,7 +25,9 @@ export const authApi = {
 // ============================================================
 export const accountApi = {
   getAll: (customerId: string) => api.get(`/api/v1/accounts/customer/${customerId}`),
+  getAllAccounts: () => api.get('/api/v1/accounts'),
   getById: (id: number) => api.get(`/api/v1/accounts/${id}`),
+  getByNumber: (accountNumber: string) => api.get(`/api/v1/accounts/number/${accountNumber}`),
   create: (data: { accountType: string; operatorId: string; customerId: string; currency?: string }) =>
     api.post('/api/v1/accounts', data),
   credit: (id: number, montant: number, desc: string) =>
@@ -57,7 +59,7 @@ export const transactionApi = {
     }),
 
   transfert: (data: { compteSource: string; compteDestinataire: string; montant: number; clientId: string; operateurSourceId: string; description: string }) =>
-    api.post('/api/v1/transactions/transfert', {
+    api.post('/api/v1/transactions/transfert/intra', {
       compteSource: data.compteSource,
       compteDestinataire: data.compteDestinataire,
       montant: data.montant,
@@ -149,11 +151,12 @@ export const auditApi = {
 };
 
 // ============================================================
-// REPORTING — reporting-service via /api/reports/**
+// REPORTING — reporting-service via /api/v1/reports/**
 // ============================================================
 export const reportingApi = {
   getTransactionStats: (debut?: string, fin?: string) =>
     api.get('/api/v1/reports/transactions', { params: { date_debut: debut, date_fin: fin } }),
   getLoanStats: () => api.get('/api/v1/reports/loans'),
-  getOperatorStats: () => api.get('/api/v1/reports/operators'),
+  getOperatorStats: () => api.get('/api/v1/reports/customers'),
+  getDashboard: () => api.get('/api/v1/reports/dashboard'),
 };

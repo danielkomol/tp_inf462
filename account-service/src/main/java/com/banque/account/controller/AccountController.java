@@ -60,6 +60,13 @@ public class AccountController {
      *
      * @PathVariable = récupère la valeur dans l'URL ({id})
      */
+    @GetMapping
+    @Operation(summary = "Lister tous les comptes actifs de la plateforme")
+    public ResponseEntity<ApiResponse<List<AccountResponse>>> getAllAccounts() {
+        List<AccountResponse> accounts = accountService.getAllActive();
+        return ResponseEntity.ok(ApiResponse.success(accounts.size() + " compte(s)", accounts));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Consulter un compte par ID")
     public ResponseEntity<ApiResponse<AccountResponse>> getAccountById(

@@ -26,6 +26,12 @@ public class CustomerController {
                 .body(ApiResponse.success("Profil client créé", response));
     }
 
+    @GetMapping
+    @Operation(summary = "Lister tous les clients")
+    public ResponseEntity<ApiResponse<java.util.List<CustomerResponse>>> getAll() {
+        return ResponseEntity.ok(ApiResponse.success("Clients récupérés", customerService.getAll()));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Consulter un client par ID")
     public ResponseEntity<ApiResponse<CustomerResponse>> getById(@PathVariable Long id) {
@@ -43,6 +49,14 @@ public class CustomerController {
     public ResponseEntity<ApiResponse<CustomerResponse>> update(
             @PathVariable Long id, @RequestBody UpdateCustomerRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Profil mis à jour", customerService.updateCustomer(id, request)));
+    }
+
+    @PutMapping("/{id}/kyc")
+    @Operation(summary = "Mettre à jour le statut KYC")
+    public ResponseEntity<ApiResponse<CustomerResponse>> updateKyc(
+            @PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        boolean approuve = "VERIFIE".equals(body.get("statut"));
+        return ResponseEntity.ok(ApiResponse.success("KYC mis à jour", customerService.verifierKYC(id, approuve)));
     }
 
     @PutMapping("/{id}/verify")

@@ -39,6 +39,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     // SELECT * FROM accounts WHERE customer_id = ?
     List<Account> findByCustomerId(String customerId);
 
+    // SELECT * FROM accounts WHERE status = ?
+    List<Account> findByStatus(Account.AccountStatus status);
+
     // SELECT * FROM accounts WHERE operator_id = ?
     List<Account> findByOperatorId(String operatorId);
 

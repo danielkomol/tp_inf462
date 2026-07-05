@@ -11,13 +11,12 @@ export default function Rapports() {
 
   useEffect(() => {
     Promise.all([
-      reportingApi.getTransactionStats().catch(() => ({ data: null })),
-      reportingApi.getLoanStats().catch(() => ({ data: null })),
-      reportingApi.getOperatorStats().catch(() => ({ data: null })),
-    ]).then(([tx, loan, op]) => {
-      setTxStats(tx.data?.data ?? tx.data);
-      setLoanStats(loan.data?.data ?? loan.data);
-      setOpStats(op.data?.data ?? op.data);
+      reportingApi.getDashboard().catch(() => ({ data: null })),
+    ]).then(([dash]) => {
+      const d = dash.data?.data ?? dash.data ?? {};
+      setTxStats(d.transactions ?? null);
+      setLoanStats(d.prets ?? null);
+      setOpStats(d.operateurs ?? null);
     }).finally(() => setLoading(false));
   }, []);
 

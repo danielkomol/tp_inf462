@@ -73,4 +73,13 @@ public class LoanController {
                 .success(true).message(loans.size() + " dossier(s) en attente").data(loans).build();
         return ResponseEntity.ok(res);
     }
+
+    @GetMapping("/all")
+    @Operation(summary = "Lister tous les prêts (admin)")
+    public ResponseEntity<ApiResponse<List<LoanResponse>>> getAll() {
+        List<LoanResponse> loans = loanService.getAll();
+        ApiResponse<List<LoanResponse>> res = ApiResponse.<List<LoanResponse>>builder()
+                .success(true).message(loans.size() + " demande(s)").data(loans).build();
+        return ResponseEntity.ok(res);
+    }
 }

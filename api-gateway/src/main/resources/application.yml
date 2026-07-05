@@ -23,6 +23,11 @@ spring:
           enabled: true
           lower-case-service-id: true
 
+      # Filtre global : supprimer les doublons de headers CORS
+      # venant des services en aval (evite "Multiple CORS header" error)
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
       routes:
 
         # ── Identity Service ──────────────────────────────────────────
@@ -63,7 +68,7 @@ spring:
 
         # ── Document Service ──────────────────────────────────────────
         - id: document-service
-          uri: http://document-service:8085
+          uri: http://document-service:8000
           predicates:
             - Path=/api/v1/documents/**
 
@@ -75,13 +80,13 @@ spring:
 
         # ── Audit Service ─────────────────────────────────────────────
         - id: audit-service
-          uri: http://audit-service:8087
+          uri: http://audit-service:8000
           predicates:
             - Path=/api/v1/audit/**
 
         # ── Reporting Service ─────────────────────────────────────────
         - id: reporting-service
-          uri: http://reporting-service:8088
+          uri: http://reporting-service:8000
           predicates:
             - Path=/api/v1/reports/**
 

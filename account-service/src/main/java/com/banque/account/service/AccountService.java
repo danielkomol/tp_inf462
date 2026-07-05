@@ -117,6 +117,11 @@ public class AccountService {
     /**
      * LISTER TOUS LES COMPTES D'UN CLIENT
      */
+    public List<AccountResponse> getAllActive() {
+        return accountRepository.findByStatus(Account.AccountStatus.ACTIVE)
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     public List<AccountResponse> getAccountsByCustomer(String customerId) {
         return accountRepository.findByCustomerId(customerId)
                 .stream()

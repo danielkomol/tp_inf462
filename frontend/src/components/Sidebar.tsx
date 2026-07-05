@@ -14,6 +14,7 @@ const menus: Record<string, { to: string; label: string }[]> = {
     { to:'/admin/dashboard',    label:'🏠 Tableau de bord' },
     { to:'/admin/utilisateurs', label:'👥 Utilisateurs' },
     { to:'/admin/operateurs',   label:'🏢 Opérateurs' },
+    { to:'/admin/prets',        label:'🏦 Prêts' },
     { to:'/admin/audit',        label:'🔍 Audit' },
     { to:'/admin/rapports',     label:'📊 Rapports' },
   ],

@@ -48,6 +48,14 @@ public class TransactionController {
         return ResponseEntity.ok(ApiResponse.success("Retrait effectué avec succès", response));
     }
 
+    @PostMapping("/transfert")
+    @Operation(summary = "Transfert (intra ou inter selon les opérateurs)")
+    public ResponseEntity<ApiResponse<TransactionResponse>> transfert(
+            @Valid @RequestBody TransfertRequest request) {
+        TransactionResponse response = transactionService.transfertIntra(request);
+        return ResponseEntity.ok(ApiResponse.success("Transfert effectué avec succès", response));
+    }
+
     @PostMapping("/transfert/intra")
     @Operation(summary = "Transfert intra-opérateur")
     public ResponseEntity<ApiResponse<TransactionResponse>> transfertIntra(

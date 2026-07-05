@@ -191,10 +191,12 @@
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -438,7 +440,7 @@
       dockerfile: Dockerfile
     container_name: audit-service
     ports:
-      - "8087:8087"
+      - "8087:8000"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       ELASTICSEARCH_URL: http://elasticsearch:9200
@@ -457,7 +459,7 @@
       dockerfile: Dockerfile
     container_name: reporting-service
     ports:
-      - "8088:8088"
+      - "8088:8000"
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
     depends_on:
@@ -487,6 +489,33 @@
       - banque-network
     restart: on-failure
 
+  # ── Mongo Express (interface MongoDB) ────────────────────────────
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8098:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    depends_on:
+      - mongodb
+    networks:
+      - banque-network
+
+  # ── phpMyAdmin ────────────────────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    ports:
+      - "8099:80"
+    environment:
+      PMA_ARBITRARY: 1
+    networks:
+      - banque-network
+
 volumes:
   identity_data:
   accounts_data:
@@ -502,6 +531,8 @@ volumes:
 networks:
   banque-network:
     driver: bridge
+
+
 
 
 

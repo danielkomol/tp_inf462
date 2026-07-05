@@ -70,6 +70,12 @@ public class CustomerService {
         return mapToResponse(customer);
     }
 
+    public java.util.List<CustomerResponse> getAll() {
+        return customerRepository.findAll()
+                .stream().map(this::mapToResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     public CustomerResponse getById(Long id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client introuvable : " + id));

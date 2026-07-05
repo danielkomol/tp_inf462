@@ -41,10 +41,12 @@ const demarrerConsommateur = async () => {
         'transaction.validated',    // Transaction réussie
         'transaction.failed',       // Transaction échouée
         'account.created',          // Nouveau compte ouvert
+        'loan.submitted',           // Demande de prêt soumise
         'loan.validated',           // Prêt approuvé
         'loan.rejected',            // Prêt refusé
         'repayment.due',            // Rappel échéance
-        'user.created'              // Nouvel utilisateur inscrit
+        'user.created',             // Nouvel utilisateur inscrit
+        'user.registered'           // Inscription confirmée
       ],
       fromBeginning: false
     });
@@ -57,10 +59,16 @@ const demarrerConsommateur = async () => {
         try {
           // Décoder le message JSON
           const eventData = JSON.parse(message.value.toString());
-          console.log(`📩 Message reçu sur le topic "${topic}" :`, eventData.eventType);
+          
+          // Normaliser le type d'événement :
+          // topic "transaction.validated" → "TRANSACTION_VALIDATED"
+          const topicNormalized = topic.toUpperCase().replace(/\./g, '_');
+          const eventType = eventData.eventType || topicNormalized;
+          
+          console.log(`📩 Message reçu sur le topic "${topic}" : ${eventType}`);
 
           // Traiter l'événement et envoyer les notifications
-          await traiterEvenement(eventData.eventType || topic.toUpperCase(), eventData);
+          await traiterEvenement(eventType, eventData);
 
         } catch (error) {
           console.error(`❌ Erreur traitement message Kafka (topic: ${topic}) :`, error.message);

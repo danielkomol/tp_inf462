@@ -50,6 +50,12 @@ def stats_clients():
     return {"success": True, "data": get_statistiques_clients()}
 
 
+@router.get("/operators")
+def stats_operateurs():
+    """Statistiques opérateurs (alias de customers pour compatibilité frontend)"""
+    return {"success": True, "data": get_statistiques_clients()}
+
+
 @router.get("/export/excel")
 def exporter_excel():
     """

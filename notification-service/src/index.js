@@ -24,8 +24,12 @@ const PORT = process.env.PORT || 3000;
 // ==============================================
 // MIDDLEWARES
 // ==============================================
-app.use(helmet());          // Sécurité HTTP headers
-app.use(cors());            // Autorise les requêtes cross-origin
+app.use(helmet());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:8080'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(morgan('dev'));     // Logs des requêtes HTTP
 app.use(express.json());    // Parse le body JSON automatiquement
 

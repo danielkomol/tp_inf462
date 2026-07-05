@@ -142,6 +142,11 @@ public class LoanService {
                 .collect(Collectors.toList());
     }
 
+    public List<LoanResponse> getAll() {
+        return loanRepository.findAll()
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     // ── Génération de l'échéancier (méthode française) ────────────────
     private List<Echeance> genererEcheancier(LoanRequest loan, BigDecimal capital,
                                               BigDecimal tauxAnnuel, int duree) {
